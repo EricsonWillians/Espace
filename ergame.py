@@ -1,0 +1,636 @@
+import pygame
+import pygame.mouse as pymo
+import os
+from itertools import product
+
+# EXCEPTIONS
+# ======================================================== #
+
+class ErgameError(Exception):
+	
+	def __init__(self, message):
+		
+		Exception.__init__(self, message)
+
+class InvalidDirectionError(ErgameError):
+	
+	def __init__(self):
+		
+		ErgameError.__init__(self, "Only 0, 1, 2 and 3 are valid values as direction numbers.")
+
+class NotMemberOfError(ErgameError):
+	
+	def __init__(self, _class):
+		
+		ErgameError.__init__(self, "The given direction object is not a member of the " + _class + " class.")
+
+# CFG
+# ======================================================== #
+
+GRAPHICS_PATH = "EWG"
+SOUNDS_PATH = "EWS"
+MUSIC_PATH = "EWM"
+
+# EXECUTION
+# ======================================================== #
+
+pygame.mixer.pre_init(44100, -16, 2, 2048*2) 
+pygame.init()
+pygame.font.init()
+
+class EwRunnable:
+
+	def __init__(self, initial_state, FPS):
+		
+		self.state = initial_state
+		self.FPS = FPS
+		self.time_elapsed = 0
+		self.clock = pygame.time.Clock()
+		
+	def run(self, f, *args):
+		while self.state is not True:
+			dt = self.clock.tick(self.FPS)
+			self.time_elapsed += dt
+			apply(f, args)
+		
+class EwApp(EwRunnable):
+
+	def __init__(self, title, w, h, FPS, fullscreen=False, state=False):
+
+		EwRunnable.__init__(self, state, FPS)
+		
+		if fullscreen == True:
+			self.screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
+		else:
+			self.screen = pygame.display.set_mode((w, h))
+		pygame.display.set_caption(title)
+
+	def check_if_time_has_elapsed_in_milliseconds(self, milliseconds):
+		if self.time_elapsed > milliseconds:
+			self.time_elapsed = 0
+			return True
+		else:
+			return False
+			
+	def check_if_time_has_elapsed_in_seconds(self, seconds):
+		if self.time_elapsed > seconds*1000:
+			self.time_elapsed = 0
+			return True
+		else:
+			return False
+			
+	def check_if_time_has_elapsed_in_minutes(self, minutes):
+		if self.time_elapsed > minutes*60000:
+			self.time_elapsed = 0
+			return True
+		else:
+			return False
+
+# DATA MANIPULATION
+# ======================================================== #
+
+def loadSound(path, name):
+
+	class NoneSound:
+		def play(self): pass
+	if not pygame.mixer:
+		return NoneSound()
+	fullname = os.path.join(path, name)
+	try:
+		sound = pygame.mixer.Sound(fullname)
+	except pygame.error, message:
+		print "Cannot load sound:", name
+		raise SystemExit, message
+	return sound
+
+class EwData:
+	
+	def __init__(self):
+		
+		self.data = {}
+		
+	def __setitem__(self, key, value):
+		self.data[key] = value
+		
+	def __getitem__(self, key):
+		return self.data[key]
+		
+	def get_data(self):
+		return self.data
+		
+class EwPos:
+	
+	def __init__(self, x, y):
+		
+		self.x = x
+		self.y = y
+		
+	def __getitem__(self, key):
+		
+		if key == "x":
+			return self.x
+		elif key == "y":
+			return self.y
+		elif key == "(xy)":
+			return (self.x, self.y)
+		elif key == "[xy]":
+			return [self.x, self.y]
+		
+	def __setitem__(self, key, value):
+		
+		if key == "x":
+			self.x = value
+		elif key == "y":
+			self.y = value
+		
+	def get_x(self):
+		return self.x
+		
+	def set_x(self, value):
+		self.x = value
+		
+	def get_y(self):
+		return self.y
+
+	def set_y(self, value):
+		self.y = value
+
+class EwDirection:
+	
+	DIRECTIONS = ["NORTH", "SOUTH", "WEST", "EAST"]
+	
+	def __init__(self, value=0):
+		
+		if value.upper() in ["UP", "DOWN", "LEFT", "RIGHT"]:
+			if value.upper() == "UP":
+				value = "NORTH"
+			elif value.upper() == "DOWN":
+				value = "SOUTH"
+			elif value.upper() == "LEFT":
+				value = "WEST"
+			elif value.upper() == "RIGHT":
+				value = "EAST"
+		
+		if isinstance(value, basestring) and value.upper() in EwDirection.DIRECTIONS:
+			self.value = value.upper()
+		else:
+			if value >= 0 and value <= 3:
+				self.value = value
+			else:
+				raise InvalidDirectionError()
+				
+	def __call__(self):
+		return self.value
+		
+	def get(self):
+		return self.value
+
+class EwMovable(EwPos):
+	
+	def __init__(self, x, y):
+		
+		EwPos.__init__(self, x, y)
+	
+	def move(self, condition, direction=0, step=1):
+		if isinstance(direction, EwDirection):
+			self.direction = direction
+		else:
+			raise NotMemberOfError("EwDirection")
+		if condition:
+			if direction() == 0 or direction() == "NORTH":
+				self.y -= step
+			if direction() == 1 or direction() == "SOUTH":
+				self.y += step
+			if direction() == 2 or direction() == "WEST":
+				self.x -= step
+			if direction() == 3 or direction() == "EAST":
+				self.x += step
+	
+	def teleport(self, condition, new_x, new_y):
+		if condition:
+			self.x = new_x
+			self.y = new_y
+		
+	def get_direction(self):
+		return self.direction
+		
+	def set_direction(self, value):
+		self.direction = value
+	
+	def get_step(self):
+		return self.step
+		
+	def set_step(self, value):
+		self.step = value
+			
+class EwResizable:
+	
+	def __init__(self, w, h):
+		
+		self.w = w
+		self.h = h
+		
+	def __getitem__(self, key):
+		
+		if key == "w":
+			return self.w
+		elif key == "h":
+			return self.h
+		elif key == "(wh)":
+			return (self.w, self.h)
+		elif key == "[wh]":
+			return [self.w, self.h]
+		
+	def __setitem__(self, key, value):
+		
+		if key == "w":
+			self.w = value
+		elif key == "h":
+			self.h = value
+		
+	def get_w(self):
+		return self.w
+		
+	def set_w(self, value):
+		self.w = value
+		
+	def get_h(self):
+		return self.h
+		
+	def set_h(self, value):
+		self.h = value
+		
+class EwPositioningSystem(EwResizable):
+	
+	def __init__(self, option, sharpness=1):
+		
+		CONST_SHARPNESS = 16
+		
+		if option == 0:
+			w = 640
+			h = 480
+		elif option == 1:
+			w = 800
+			h = 600
+		elif option == 2:
+			w = 1024
+			h = 768
+		elif option == 3:
+			w = 1280
+			h = 1024
+		elif option == 4:
+			w = 1680
+			h = 1050
+		
+		if sharpness != 0:
+			sh = CONST_SHARPNESS*sharpness
+		else:
+			sh = CONST_SHARPNESS*1
+	
+		EwResizable.__init__(self, w, h)
+		
+		self.key_positions = [[x for x in range(sh)], [y for y in range(sh)]]
+		self.x = dict(zip([x for x in self.key_positions[0]], [x for x in range(0, w, w/sh)]))
+		self.y = dict(zip([y for y in self.key_positions[1]], [y for y in range(0, h, h/sh)]))
+		self.coords = list(product(self.y.keys(), self.x.keys()))
+		self.sh = sh
+		
+# Object Manipulation
+# ======================================================== #
+
+class EwObject(EwData, EwMovable, EwResizable):
+	
+	def __init__(self, x, y, w, h):
+		
+		EwData.__init__(self)
+		EwMovable.__init__(self, x, y)
+		EwResizable.__init__(self, w, h)
+		
+	def get(self):
+		return (self.x, self.y, self.w, self.h)
+		
+	def __setitem__(self, key, value):
+		self.data[key] = value
+		
+	def __getitem__(self, key):
+		return self.data[key]
+		
+class EwImage(EwObject):
+	
+	def __init__(self, x, y, w, h, filename):
+		
+		EwObject.__init__(self, x, y, w, h)
+		
+		self.filename = filename
+		if ".png" not in self.filename:
+			self.image = pygame.image.load(os.path.join(GRAPHICS_PATH, filename)).convert()
+		else:
+			self.image = pygame.Surface.convert_alpha(pygame.image.load(os.path.join(GRAPHICS_PATH, filename)))
+			
+		self.transform()
+			
+	def transform(self):
+		self.image = pygame.transform.scale(self.image, (self.w, self.h))
+		
+	def transform_custom(self, w, h):
+		self.image = pygame.transform.scale(self.image, (w, h))
+			
+	def draw(self, destination_surface):
+		destination_surface.blit(self.image, (self.x, self.y))
+		
+class EwScrollingImage(EwImage):
+	
+	def __init__(self, x, y, w, h, filename, scroll_direction=0, scroll_speed=1):
+		
+		EwImage.__init__(self, x, y, w, h, filename)
+		
+		if isinstance(scroll_direction, EwDirection):
+			self.scroll_direction = scroll_direction
+		else:
+			raise NotMemberOfError("EwDirection")
+		self.scroll_speed = scroll_speed
+		self.default_scroll_speed = self.scroll_speed
+		self.initial_y = self.y
+		self.y0_reset_point = self.initial_y - self.h
+		self.y1_reset_point = self.initial_y + self.h
+		self.initial_x = self.x
+		self.x2_reset_point = self.initial_x - self.w
+		self.x3_reset_point = self.initial_x + self.w
+		
+	def draw(self, destination_surface):
+		if self.scroll_direction() == 0 or self.scroll_direction() == "NORTH":
+			self.y -= self.scroll_speed
+			if self.y < self.y0_reset_point:
+				self.y = self.initial_y
+			destination_surface.blit(self.image, (self.x, self.y))
+			destination_surface.blit(self.image, (self.x, self.y+self.h))
+		if self.scroll_direction() == 1 or self.scroll_direction() == "SOUTH":
+			self.y += self.scroll_speed
+			if self.y > self.y1_reset_point:
+				self.y = self.initial_y
+			destination_surface.blit(self.image, (self.x, self.y))
+			destination_surface.blit(self.image, (self.x, self.y-self.h))
+		if self.scroll_direction() == 2 or self.scroll_direction() == "WEST":
+			self.x -= self.scroll_speed
+			if self.x < self.x2_reset_point:
+				self.x = self.initial_x
+			destination_surface.blit(self.image, (self.x, self.y))
+			destination_surface.blit(self.image, (self.x+self.w, self.y))
+		if self.scroll_direction() == 3 or self.scroll_direction() == "EAST":
+			self.x += self.scroll_speed
+			if self.x > self.x3_reset_point:
+				self.x = self.initial_x
+			destination_surface.blit(self.image, (self.x, self.y))
+			destination_surface.blit(self.image, (self.x-self.w, self.y))
+			
+	def get_scroll_direction(self):
+		return self.scroll_direction
+		
+	def set_scroll_direction(self, value):
+		self.scroll_direction = value
+		
+	def get_scroll_speed(self):
+		return self.scroll_speed
+		
+	def set_scroll_speed(self, value):
+		self.scroll_speed = value
+		
+	def reset_scroll_speed(self):
+		self.scroll_speed = self.default_scroll_speed
+			
+class EwFont(EwObject):
+	
+	def __init__(self, x, y, w, h, filename, text, color, bold=False):
+		
+		EwObject.__init__(self, x, y, w, h)
+		
+		self.filename = filename
+		self.text = text
+		self.color = color
+		if self.filename is not None:
+			self.font = pygame.font.Font(os.path.join(GRAPHICS_PATH, filename), self.w+self.h*2)
+		else:
+			self.font = pygame.font.Font(None, self.w+self.h)
+		if bold:
+			self.font.set_bold(True)
+		self.image = self.font.render(self.text, 1, self.color)
+		self.transform()
+		
+	def transform(self):
+		self.image = pygame.transform.scale(self.image, (self.w, self.h))
+		
+	def draw(self, destination_surface):
+		destination_surface.blit(self.image, (self.x, self.y))
+		
+	def get_text(self):
+		return self.text
+	
+	def update(self, value):
+		self.text = value
+		self.image = self.font.render(self.text, 1, self.color)
+		self.transform()
+	
+	def __call__(self, value):
+		self.text = value
+		self.image = self.font.render(self.text, 1, self.color)
+		self.transform()
+	
+	def set_text(self, value):
+		self.text = value
+   
+	def get_color(self):
+		return self.color
+		
+	def set_color(self, value):
+		self.color = value
+		
+def draw_mouse_coordinates(destination_surface, w=None, h=None, color=(255,0,0)):
+	if w is None or h is None:
+		w = 64
+		h = 16
+	pos = EwFont(pymo.get_pos()[0]+16, pymo.get_pos()[1], w, h, None, str((pymo.get_pos()[0], pymo.get_pos()[1])), color)
+	pos.draw(destination_surface)
+
+class EwShape(EwObject):
+	
+	def __init__(self, x, y, w, h, color, thickness):
+		
+		EwObject.__init__(self, x, y, w, h)
+		
+		self.color = color
+		self.thickness = thickness
+		
+	def get_color(self):
+		return self.color
+		
+	def set_color(self, value):
+		self.color = value
+		
+	def get_thickness(self):
+		return self.thickness
+		
+	def set_thickness(self, value):
+		self.thickness = value
+		
+class EwRect(EwShape):
+	
+	def __init__(self, x, y, w, h, color=(255,255,255), thickness=1):
+		
+		EwShape.__init__(self, x, y, w, h, color, thickness)
+		
+	def draw(self, destination_surface):
+		pygame.draw.rect(destination_surface, self.color, (self.x, self.y, self.w, self.h), self.thickness)
+		
+	def draw_ellipse(self, destination_surface):
+		pygame.draw.ellipse(destination_surface, self.color, (self.x, self.y, self.w, self.h), self.thickness)
+
+# Collision Detection
+# ======================================================== #
+
+class EwCol:
+	
+	def __init__(self, o, oo):
+		
+		self.o = o
+		self.oo = oo
+		self.ox = self.o.x
+		self.oy = self.o.y
+		self.ow = self.o.w
+		self.oh = self.o.h
+		self.oox = self.oo.x
+		self.ooy = self.oo.y
+		self.oow = self.oo.w
+		self.ooh = self.oo.h
+		
+	def __call__(self):
+		
+		if ((((self.ox + self.ow) > self.oox) and (self.ox < (self.oox + self.oow))) and (((self.oy + self.oh) > self.ooy) and (self.oy < (self.ooy + self.ooh)))):
+			return True
+		else:
+			return False
+			
+class EwMouseCol:
+	
+	def __init__(self, o, oo):
+		
+		self.o = o
+		self.oo = oo
+		self.ox = self.o[0]
+		self.oy = self.o[1]
+		self.oox = self.oo.x
+		self.ooy = self.oo.y
+		self.oow = self.oo.w
+		self.ooh = self.oo.h
+		
+	def __call__(self):
+		
+		if (((self.ox > self.oox) and (self.ox < (self.oox + self.oow))) and ((self.oy > self.ooy) and (self.oy < (self.ooy + self.ooh)))):
+			return True
+		else:
+			return False
+
+# Screen Management
+# ======================================================== #
+
+class EwScene:
+	
+	def __init__(self, scene):
+		
+		if isinstance(scene, basestring):
+			self.scene = scene
+		else:
+			raise NotMemberOfError("basestring")
+		
+class EwPlot:
+	
+	def __init__(self, scenes):
+		
+		self.data = scenes
+		if len(self.data) > 0:
+			
+			self.current = self.data[0]
+	
+	def __call__(self):
+		return self.current
+	
+	def get_scene(self):
+		return self.current
+	
+	def change_scene(self, new_scene):
+		self.current = new_scene
+		
+	def next(self):
+		if self.data.index(self.current) != len(self.data)-1:
+			self.change_scene(self.data[self.data.index(self.current)+1])
+		else:
+			self.change_scene(self.data[0])
+			
+	def previous(self):
+		if self.data.index(self.current) != 0:
+			self.change_scene(self.data[self.data.index(self.current)-1])
+		else:
+			self.change_scene(self.data[len(self.data)-1])
+		
+def get_standard_plot():
+
+	scene = [EwScene("S"+str(x)) for x in range(999)]
+	opt = [EwScene("OPT"+str(x)) for x in range(999)]
+	inv = [EwScene("INV"+str(x)) for x in range(999)]
+	l = []
+	l.append(EwScene("MAIN"))
+	l.extend(scene)
+	l.extend(opt)
+	l.extend(inv)
+	return EwPlot(l)
+
+# GUI
+# ======================================================== #
+
+class EwAbstractButton:
+	
+	def __init__(self, x, y, font_width, font_height, font_filename, text, font_color, bold=False):
+		
+		self.font = EwFont(x, y, font_width, font_height, font_filename, text, font_color, bold)
+	
+	def hover(self, mouse_pos):
+		if EwMouseCol(mouse_pos, self)():
+			return True
+		if not EwMouseCol(mouse_pos, self)():
+			return False
+				
+	def press(self, mouse_pos, mouse_button, key=None):
+		if EwMouseCol(mouse_pos, self)() and pygame.mouse.get_pressed()[mouse_button]:
+			return True
+		if not EwMouseCol(mouse_pos, self)() and pygame.mouse.get_pressed()[mouse_button]:
+			return False
+		if key is not None:
+			if pygame.key.get_pressed()[key]:
+				return True
+			if not pygame.key.get_pressed()[key]:
+				return False
+		
+	def get_font_size(self):
+		return self.font_size
+		
+	def set_font_size(self, value):
+		self.font_size = value
+		
+	def get_font(self):
+		return self.font
+		
+	def set_font(self, new_font):
+		self.font = new_font
+		
+class EwButton(EwAbstractButton, EwImage):
+	
+	def __init__(self, x, y, w, h, filename, font_width, font_height, font_filename, text, font_color, bold=False):
+		
+		EwAbstractButton.__init__(self, x+font_width/2, y+font_height/2, font_width, font_height, font_filename, text, font_color, bold)
+		EwImage.__init__(self, x, y, w, h, filename)
+		
+class EwRectButton(EwAbstractButton, EwRect):
+	
+	def __init__(self, x, y, w, h, color, thickness, font_width, font_height, font_filename, text, font_color, bold=False):
+		
+		EwAbstractButton.__init__(self, x+(w/2)-(font_width/2), y+(h/2)-(font_height/2), font_width, font_height, font_filename, text, font_color, bold)
+		EwRect.__init__(self, x, y, w, h, color, thickness)
