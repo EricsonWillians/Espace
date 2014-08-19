@@ -284,11 +284,10 @@ if __name__ == "__main__":
 		if plot() == "HIGHSCORE":
 			
 			if os.path.isfile("hs"):
-				hs = 0
+				hs = ""
 				hs_file_r = open("hs", "r")
-				for n in hs_file_r.read():
-					hs = int(n)
-					hs_file_r.close()
+				hs = int("".join(hs_file_r.read()))
+				hs_file_r.close()
 			else:
 				hs = "NONE"
 			
