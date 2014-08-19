@@ -1,7 +1,7 @@
 Espace
 ======
 
-Espace is a space arcade shooting game written in Python with Ergame and Pygame.
+Espace is an open-source space arcade shooting game written in Python with Ergame and Pygame.
 Ergame is my personal game library, and it's available [here on github](https://github.com/EricsonWillians/Ergame).
 
 ### Controls:
