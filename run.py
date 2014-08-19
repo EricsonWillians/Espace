@@ -11,6 +11,10 @@ if __name__ == "__main__":
 	DISTANCE_LIMIT = 2048
 
 	app = er.EwApp("Espace", SCREEN_WIDTH, SCREEN_HEIGHT, 300, True)
+	
+	if not os.path.isfile("hs"):
+		open("hs", "w")
+	
 	plot = er.EwPlot(["MAIN_MENU", "GAME", "HIGHSCORE", "PAUSE" "GAME_OVER"])
 	
 	pygame.mixer.music.load(os.path.join(er.MUSIC_PATH, "ewm.ogg"))
