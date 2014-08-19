@@ -312,13 +312,14 @@ if __name__ == "__main__":
 				
 		if plot() == "HIGHSCORE":
 			
-			if os.path.isfile("hs"):
-				hs = ""
-				hs_file_r = open("hs", "r")
-				hs = int("".join(hs_file_r.read()))
-				hs_file_r.close()
-			else:
-				hs = "NONE"
+			try:
+				if os.path.isfile("hs"):
+					hs = ""
+					hs_file_r = open("hs", "r")
+					hs = int("".join(hs_file_r.read()))
+					hs_file_r.close()
+			except:
+				hs = 0
 			
 			er.EwFont((SCREEN_WIDTH/2)-(SCREEN_WIDTH-256)/2, (SCREEN_HEIGHT/2)-(SCREEN_HEIGHT-256)/2, SCREEN_WIDTH-256, SCREEN_HEIGHT-256, "Squares Bold Free.otf", str(hs), (150, 255, 255)).draw(app.screen)
 	
