@@ -6,9 +6,9 @@ Ergame is my personal game library, and it's available [here on github](https://
 
 ### Controls:
 
-AWSD or ARROWS for movement.
-LSHIFT for boost.
-SPACE for shooting.
-P for pause.
+* AWSD or ARROWS for movement.
+* LSHIFT for boost.
+* SPACE for shooting.
+* P for pause.
 
 Gameplay hint: You can move faster by combining the movements of AWSD and the ARROWS (And LSHIFT).
