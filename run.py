@@ -92,13 +92,19 @@ if __name__ == "__main__":
 
 	tlost_green = 255
 	tlost_red = 0
-
-	class PlayerBullet(er.EwRect):
+	
+	class Bullet(er.EwRect):
 		
-		def __init__(self, x, y, speed):
+		def __init__(self, x, y, w, h, color, thickness, speed):
 			
 			self.speed = speed
-			er.EwRect.__init__(self, x, y, PLAYER_SIZE/2 + 32, PLAYER_SIZE/2, (50, 50, 255), 2)
+			er.EwRect.__init__(self, x, y, w, h, color, thickness)
+
+	class PlayerBullet(Bullet):
+		
+		def __init__(self, x, y, speed):
+
+			Bullet.__init__(self, x, y, PLAYER_SIZE/2 + 32, PLAYER_SIZE/2, (50, 50, 255), 2, speed)
 
 	frags = 0
 	lost = 0
