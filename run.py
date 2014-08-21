@@ -47,7 +47,7 @@ if __name__ == "__main__":
 	plot = er.EwPlot(["MAIN_MENU", "GAME", "HIGHSCORE", "PAUSE" "GAME_OVER"])
 	
 	pygame.mixer.music.load(os.path.join(er.MUSIC_PATH, "ewm.ogg"))
-#	pygame.mixer.music.play(-1)
+	pygame.mixer.music.play(-1)
 		
 	fire_sound = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "fire.ogg"))
 	fire_sound.set_volume(0.3)
