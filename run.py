@@ -90,6 +90,7 @@ if __name__ == "__main__":
 	player["Health"] = 20
 	player["Ammo"] = []
 	player["Health Bar"] = HealthBar((SCREEN_WIDTH/2)-player.w/2, SCREEN_HEIGHT-player.h/2, player.w, player.h/3, 20)
+	player["Shoot Mode"] = "DEFAULT"
 
 	tlost_green = 255
 	tlost_red = 0
@@ -160,7 +161,10 @@ if __name__ == "__main__":
 					if er.EwCol(bullet, en)():
 						if en.health <= 0:
 							kill.play()
-							self.spawn.pop(self.spawn.index(en))
+							try:
+								self.spawn.pop(self.spawn.index(en))
+							except:
+								print "Enemy error (The game tried to delete an enemy from the enemy list that does not exist)."
 							global frags
 							frags += 1
 						en.health -= 1
@@ -243,20 +247,59 @@ if __name__ == "__main__":
 	
 	def organize_bullets():
 
-		if pygame.key.get_pressed()[pygame.K_SPACE]:
-			if app.check_if_time_has_elapsed_in_milliseconds(80):
+		def shoot(t):
+			
+			if app.check_if_time_has_elapsed_in_milliseconds(t):
 				fire_sound.play()
-				if len(player["Ammo"]) < 16:
+				if len(player["Ammo"]) < 32:
 					player["Ammo"].append(PlayerBullet(player.x, player.y, 2))
 				else:
 					for bullet in player["Ammo"]:
-						if bullet.y < -bullet.h:
-							player["Ammo"].pop(player["Ammo"].index(bullet))    
-				
+						if player["Shoot Mode"] == "DEFAULT":
+							if bullet.y < -bullet.h:
+								player["Ammo"].pop(player["Ammo"].index(bullet))
+						if player["Shoot Mode"] == "BACKWARDS":
+							if bullet.y > SCREEN_HEIGHT+bullet.h:
+								player["Ammo"].pop(player["Ammo"].index(bullet))
+						if player["Shoot Mode"] == "WEST":
+							if bullet.x < -bullet.w:
+								player["Ammo"].pop(player["Ammo"].index(bullet))
+						if player["Shoot Mode"] == "EAST":
+							if bullet.x > SCREEN_WIDTH+bullet.w:
+								player["Ammo"].pop(player["Ammo"].index(bullet))
+
+		if pygame.key.get_pressed()[pygame.K_SPACE]:
+			player["Shoot Mode"] = "DEFAULT"
+			shoot(80)
+		if pygame.key.get_pressed()[pygame.K_SPACE] and pygame.key.get_pressed()[pygame.K_DOWN] and pygame.key.get_pressed()[pygame.K_s]:
+			player["Shoot Mode"] = "BACKWARDS"
+			shoot(80)
+		if pygame.key.get_pressed()[pygame.K_SPACE] and pygame.key.get_pressed()[pygame.K_LEFT] and pygame.key.get_pressed()[pygame.K_a]:
+			player["Shoot Mode"] = "WEST"
+			shoot(80)
+		if pygame.key.get_pressed()[pygame.K_SPACE] and pygame.key.get_pressed()[pygame.K_RIGHT] and pygame.key.get_pressed()[pygame.K_d]:
+			player["Shoot Mode"] = "EAST"
+			shoot(80)
+			
+		
 		if len(player["Ammo"]) > 0:
-			for bullet in player["Ammo"]:
-				bullet.y -= bullet.speed
-				bullet.draw_ellipse(app.screen)
+			if player["Shoot Mode"] == "DEFAULT":
+				for bullet in player["Ammo"]:
+					bullet.y -= bullet.speed
+					bullet.draw_ellipse(app.screen)
+			if player["Shoot Mode"] == "BACKWARDS":
+				for bullet in player["Ammo"]:
+					bullet.y += bullet.speed*3
+					bullet.draw_ellipse(app.screen)
+			if player["Shoot Mode"] == "WEST":
+				for bullet in player["Ammo"]:
+					bullet.x -= bullet.speed*3
+					bullet.draw_ellipse(app.screen)
+			if player["Shoot Mode"] == "EAST":
+				for bullet in player["Ammo"]:
+					bullet.x += bullet.speed*3
+					bullet.draw_ellipse(app.screen)
+			
 				
 		if len(RM.raid.spawn) > 0:
 			for enemy in RM.raid.spawn:
