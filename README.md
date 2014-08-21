@@ -15,7 +15,7 @@ Ergame is my personal game library, and it's available [here on github](https://
 
 * Advanced bullet control.
 * Player health.
-* Improved health system (Now each Health Bar has a visual number representation of its value).
+* Improved health system (Now each Health Bar has a visual numberic representation of its value).
 * Enemy bullets (Now they shoot as well).
 
 ### Gameplay Hints:
