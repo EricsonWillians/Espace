@@ -21,4 +21,4 @@ Ergame is my personal game library, and it's available [here on github](https://
 ### Gameplay Hints:
 
 * You can move faster by combining the movements of AWSD and the ARROWS (And LSHIFT).
-* If you combine movements and at the same time that you shoot, you'll be able to control your bullets (And that allows you to cluster bullets in order to wipe out more enemies).
+* If you combine movements at the same time that you shoot, you'll be able to control your bullets (And that allows you to cluster bullets in order to wipe out more enemies).
