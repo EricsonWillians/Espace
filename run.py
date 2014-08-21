@@ -452,15 +452,18 @@ if __name__ == "__main__":
 				player.move(pygame.key.get_pressed()[pygame.K_a], er.EwDirection("WEST"), PLAYER_BOOST)
 				player.move(pygame.key.get_pressed()[pygame.K_RIGHT], er.EwDirection("EAST"), PLAYER_BOOST)
 				player.move(pygame.key.get_pressed()[pygame.K_d], er.EwDirection("EAST"), PLAYER_BOOST)
-				
-			if pygame.key.get_pressed()[pygame.K_p]:
-				plot.change_scene("PAUSE")
+			
+			if app.check_if_time_has_elapsed_in_milliseconds(200):
+				if pygame.key.get_pressed()[pygame.K_p] or pygame.key.get_pressed()[pygame.K_ESCAPE]:
+					plot.change_scene("PAUSE")
 			
 		if plot() == "PAUSE":
 			
 			tpaused.draw(app.screen)
-			
-			if resume_game.press(pygame.mouse.get_pos(), 0, pygame.K_ESCAPE):
+			if app.check_if_time_has_elapsed_in_milliseconds(130):
+				if pygame.key.get_pressed()[pygame.K_p] or pygame.key.get_pressed()[pygame.K_ESCAPE]:
+					plot.change_scene("GAME")
+			if resume_game.press(pygame.mouse.get_pos(), 0, None):
 				plot.change_scene("GAME")
 				
 			if highscore.press(pygame.mouse.get_pos(), 0, pygame.K_h):
