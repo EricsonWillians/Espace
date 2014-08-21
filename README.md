@@ -14,7 +14,7 @@ Ergame is my personal game library, and it's available [here on github](https://
 ### Latest Updates:
 
 * (21/08/2014): Advanced bullet control.
-* (21/08/2014): Player health. (21/08/2014)
+* (21/08/2014): Player health.
 * (21/08/2014): Improved health system (Now each Health Bar has a visual numberic representation of its value).
 * (21/08/2014): Enemy bullets (Now they shoot as well).
 
