@@ -47,7 +47,7 @@ if __name__ == "__main__":
 	plot = er.EwPlot(["MAIN_MENU", "GAME", "HIGHSCORE", "PAUSE" "GAME_OVER"])
 	
 	pygame.mixer.music.load(os.path.join(er.MUSIC_PATH, "ewm.ogg"))
-	pygame.mixer.music.play(-1)
+#	pygame.mixer.music.play(-1)
 		
 	fire_sound = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "fire.ogg"))
 	fire_sound.set_volume(0.3)
@@ -68,6 +68,7 @@ if __name__ == "__main__":
 			self.value = value
 			self.green = 255
 			self.red = 0
+			self.number = er.EwFont(x+(w/2)-(w/5)/2, y, w/5, h, None, str(self.value), (255, 255, 255))
 			er.EwRect.__init__(self, x, y, w, h, (self.red, self.green, 0), 0)
 			
 		def subtract_health(self, damage):
@@ -86,9 +87,9 @@ if __name__ == "__main__":
 	PLAYER_BOOST = 1.8
 	
 	player = er.EwImage(((SCREEN_WIDTH/2)-(PLAYER_SIZE/2)), 768-PLAYER_SIZE*2, PLAYER_SIZE+32, PLAYER_SIZE, "Player.png")
-	player["Health"] = 100
+	player["Health"] = 20
 	player["Ammo"] = []
-	player["Health Bar"] = HealthBar(player.x, player.y-player.h/2, player.w, player.h/3, 100)
+	player["Health Bar"] = HealthBar((SCREEN_WIDTH/2)-player.w/2, SCREEN_HEIGHT-player.h/2, player.w, player.h/3, 20)
 
 	tlost_green = 255
 	tlost_red = 0
@@ -104,7 +105,13 @@ if __name__ == "__main__":
 		
 		def __init__(self, x, y, speed):
 
-			Bullet.__init__(self, x, y, PLAYER_SIZE/2 + 32, PLAYER_SIZE/2, (50, 50, 255), 2, speed)
+			Bullet.__init__(self, x+((PLAYER_SIZE/2)/2), y-PLAYER_SIZE/2, PLAYER_SIZE/2 + 32, PLAYER_SIZE/2, (50, 50, 255), 2, speed)
+			
+	class EnemyBullet(Bullet):
+		
+		def __init__(self, x, y, w, h, color, speed):
+
+			Bullet.__init__(self, x, y, w, h, color, 0, speed)
 
 	frags = 0
 	lost = 0
@@ -130,16 +137,21 @@ if __name__ == "__main__":
 		def translate(self):
 			self.y += self.speed
 			self.health_bar.y += self.speed
+			self.health_bar.number.y += self.speed
 			
 	class Raid:
 		
 		def __init__(self, spawn_number, speed_range):
 
 			self.spawn = [Enemy(speed_range) for x in range(1, spawn_number)]
+			for enemy in self.spawn:
+				enemy["Ammo"] = []
 			
 		def draw(self):
 			[x.draw(app.screen) for x in self.spawn]
 			[x.health_bar.draw(app.screen) for x in self.spawn]
+			[x.health_bar.number.draw(app.screen) for x in self.spawn]
+			[x.health_bar.number.update(str(x.health)) for x in self.spawn]
 			[x.translate() for x in self.spawn]
 			
 		def check_col(self):
@@ -154,6 +166,12 @@ if __name__ == "__main__":
 						en.health -= 1
 						en.health_bar.subtract_health(1)
 						player["Ammo"].pop(player["Ammo"].index(bullet))
+				for bullet in en["Ammo"]:
+					if er.EwCol(bullet, player)():
+						random_damage = randrange(1, 4)
+						player["Health"] -= random_damage
+						player["Health Bar"].subtract_health(random_damage)
+						en["Ammo"].pop(en["Ammo"].index(bullet))
 			
 	class RaidManager:
 		
@@ -191,9 +209,9 @@ if __name__ == "__main__":
 		lost = 0
 		player.x = ((SCREEN_WIDTH/2)-(PLAYER_SIZE/2))
 		player.y = 768-PLAYER_SIZE*2
-		player["Health"] = 100
+		player["Health"] = 20
 		player["Ammo"] = []
-		player["Health Bar"] = HealthBar(player.x, player.y-player.h/2, player.w, player.h/3, 100)
+		player["Health Bar"] = HealthBar((SCREEN_WIDTH/2)-player.w/2, SCREEN_HEIGHT-player.h/2, player.w, player.h/3, 20)
 		global RM
 		RM = RaidManager()
 	
@@ -209,7 +227,7 @@ if __name__ == "__main__":
 				global tlost_red
 				tlost_green -= 255/LOST_LIMIT
 				tlost_red += 255/LOST_LIMIT
-			if er.EwCol(player, en)() or lost >= 10:
+			if er.EwCol(player, en)() or lost >= 10 or player["Health"] <= 0:
 				if os.path.isfile("hs"):
 					hs = 0
 					hs_file_r = open("hs", "r")
@@ -229,7 +247,7 @@ if __name__ == "__main__":
 			if app.check_if_time_has_elapsed_in_milliseconds(80):
 				fire_sound.play()
 				if len(player["Ammo"]) < 16:
-					player["Ammo"].append(PlayerBullet(player.x+((PLAYER_SIZE/2)/2), player.y-PLAYER_SIZE/2, 2))
+					player["Ammo"].append(PlayerBullet(player.x, player.y, 2))
 				else:
 					for bullet in player["Ammo"]:
 						if bullet.y < -bullet.h:
@@ -239,6 +257,21 @@ if __name__ == "__main__":
 			for bullet in player["Ammo"]:
 				bullet.y -= bullet.speed
 				bullet.draw_ellipse(app.screen)
+				
+		if len(RM.raid.spawn) > 0:
+			for enemy in RM.raid.spawn:
+				if len(enemy["Ammo"]) < 1:
+					enemy["Ammo"].append(EnemyBullet(enemy.x+(enemy.w/2)-4, enemy.y+(enemy.h+4), 8, 8, (255, 255, 255), uniform(0.3, 2.2)))
+				else:
+					for bullet in enemy["Ammo"]:
+						if bullet.y > SCREEN_HEIGHT + bullet.h:
+							enemy["Ammo"].pop(enemy["Ammo"].index(bullet))
+							
+				if len(enemy["Ammo"]) > 0:
+					for bullet in enemy["Ammo"]:
+						bullet.y += bullet.speed
+						bullet.draw_ellipse(app.screen)
+		
 # Buttons:
 
 	BUTTON_WIDTH = 128
@@ -350,6 +383,9 @@ if __name__ == "__main__":
 			
 			# Players, enemies and stuff <<
 			player.draw(app.screen)
+			player["Health Bar"].draw(app.screen)
+			player["Health Bar"].number.update(str(player["Health"]))
+			player["Health Bar"].number.draw(app.screen)
 			organize_bullets()
 			RM.manage()
 			end_game()
