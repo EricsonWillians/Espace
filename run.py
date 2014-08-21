@@ -203,6 +203,7 @@ if __name__ == "__main__":
 	
 	def default():
 		
+		bg.scroll_speed = 1
 		global tlost_green
 		tlost_green = 255
 		global tlost_red
