@@ -29,6 +29,7 @@ TWITTER: https://twitter.com/poisonewein
 
 import pygame
 import pygame.mouse as pymo
+import json
 import os
 from itertools import product
 
@@ -51,7 +52,13 @@ class NotMemberOfError(ErgameError):
 	
 	def __init__(self, _class):
 		
-		ErgameError.__init__(self, "The given direction object is not a member of the " + _class + " class.")
+		ErgameError.__init__(self, "The given direction object is not a member of the " + _class + " class(es).")
+		
+class FileNotFoundError(ErgameError):
+	
+	def __init__(self, _file):
+		
+		ErgameError.__init__(self, "The file " + _file + " could not be found.")
 
 # CFG
 # ======================================================== #
@@ -59,6 +66,63 @@ class NotMemberOfError(ErgameError):
 GRAPHICS_PATH = "EWG"
 SOUNDS_PATH = "EWS"
 MUSIC_PATH = "EWM"
+
+# DATA MANIPULATION
+# ======================================================== #
+
+def loadSound(path, name):
+
+	class NoneSound:
+		def play(self): pass
+	if not pygame.mixer:
+		return NoneSound()
+	fullname = os.path.join(path, name)
+	try:
+		sound = pygame.mixer.Sound(fullname)
+	except pygame.error, message:
+		print "Cannot load sound:", name
+		raise SystemExit, message
+	return sound
+	
+class EwSerializable:
+	
+	def __init__(self):
+		
+		self.file = None
+		
+	def serialize(self, path, mode):	
+		try:
+			self.file = open(path, mode)
+		except:
+			raise FileNotFoundError()
+		if self.file is not None:
+			return self.file
+			self.file.close()
+
+class EwData(EwSerializable):
+	
+	def __init__(self):
+		
+		EwSerializable.__init__(self)
+		self.data = {}
+		
+	def __setitem__(self, key, value):
+		self.data[key] = value
+		
+	def __getitem__(self, key):
+		return self.data[key]
+		
+	def get_data(self):
+		return self.data
+		
+	def write(self, path):
+		self.serialize(path, "w").write(json.dumps(self.get_data()))
+		
+	def load(self, path):
+		json_data = open(path, "r")
+		self.data = json.load(json_data)
+		json_data.close()
+		return self.data
 
 # EXECUTION
 # ======================================================== #
@@ -76,23 +140,52 @@ class EwRunnable:
 		self.time_elapsed = 0
 		self.clock = pygame.time.Clock()
 		
+	def __call__(self):
+		self.state = True
+		
 	def run(self, f, *args):
 		while self.state is not True:
 			dt = self.clock.tick(self.FPS)
 			self.time_elapsed += dt
 			apply(f, args)
+			
+	def watch_for_exit(self):
 		
-class EwApp(EwRunnable):
+		for e in pygame.event.get():
+			if e.type == pygame.QUIT:
+				self()
+		
+class EwApp(EwRunnable, EwData):
 
 	def __init__(self, title, w, h, FPS, fullscreen=False, state=False):
 
 		EwRunnable.__init__(self, state, FPS)
+		EwData.__init__(self)
 		
-		if fullscreen == True:
-			self.screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
+		if os.path.isfile("conf.edt"):
+			self["TITLE"] = self.load("conf.edt")["TITLE"]
+			self["SCREEN_WIDTH"] = self.load("conf.edt")["SCREEN_WIDTH"]
+			self["SCREEN_HEIGHT"] = self.load("conf.edt")["SCREEN_WIDTH"]
+			self["FPS"] = self.load("conf.edt")["FPS"]
+			self["FULLSCREEN"] = self.load("conf.edt")["FULLSCREEN"]
+			print "Configuration dictionary loaded:\n===============================\n"
+			for item in self.data.items():
+				print "{}: {}".format(str(item[0]), str(item[1]))
 		else:
-			self.screen = pygame.display.set_mode((w, h))
-		pygame.display.set_caption(title)
+			self["TITLE"] = title
+			self["SCREEN_WIDTH"] = w
+			self["SCREEN_HEIGHT"] = h
+			self["FPS"] = FPS
+			self["FULLSCREEN"] = fullscreen
+			self.write("conf.edt")
+			print "Configuration dictionary saved."
+		
+		if self["FULLSCREEN"] == True:
+			self.screen = pygame.display.set_mode((self["SCREEN_WIDTH"], self["SCREEN_HEIGHT"]), pygame.FULLSCREEN)
+		else:
+			self.screen = pygame.display.set_mode((self["SCREEN_WIDTH"], self["SCREEN_HEIGHT"]))
+		pygame.display.set_caption(self["TITLE"])
+		
 
 	def check_if_time_has_elapsed_in_milliseconds(self, milliseconds):
 		if self.time_elapsed > milliseconds:
@@ -115,37 +208,8 @@ class EwApp(EwRunnable):
 		else:
 			return False
 
-# DATA MANIPULATION
+# POSITIONS AND DIMENSIONS
 # ======================================================== #
-
-def loadSound(path, name):
-
-	class NoneSound:
-		def play(self): pass
-	if not pygame.mixer:
-		return NoneSound()
-	fullname = os.path.join(path, name)
-	try:
-		sound = pygame.mixer.Sound(fullname)
-	except pygame.error, message:
-		print "Cannot load sound:", name
-		raise SystemExit, message
-	return sound
-
-class EwData:
-	
-	def __init__(self):
-		
-		self.data = {}
-		
-	def __setitem__(self, key, value):
-		self.data[key] = value
-		
-	def __getitem__(self, key):
-		return self.data[key]
-		
-	def get_data(self):
-		return self.data
 		
 class EwPos:
 	
@@ -171,6 +235,9 @@ class EwPos:
 			self.x = value
 		elif key == "y":
 			self.y = value
+		
+	def __call__(self):
+		return (self.x, self.y)
 		
 	def get_x(self):
 		return self.x
@@ -335,14 +402,8 @@ class EwObject(EwData, EwMovable, EwResizable):
 		EwMovable.__init__(self, x, y)
 		EwResizable.__init__(self, w, h)
 		
-	def get(self):
+	def __call__(self):
 		return (self.x, self.y, self.w, self.h)
-		
-	def __setitem__(self, key, value):
-		self.data[key] = value
-		
-	def __getitem__(self, key):
-		return self.data[key]
 		
 class EwImage(EwObject):
 	
@@ -489,6 +550,9 @@ class EwShape(EwObject):
 		self.color = color
 		self.thickness = thickness
 		
+	def __call__(self):
+		return (self.x, self.y, self.w, self.h, self.color, self.thickness)
+		
 	def get_color(self):
 		return self.color
 		
@@ -512,6 +576,87 @@ class EwRect(EwShape):
 		
 	def draw_ellipse(self, destination_surface):
 		pygame.draw.ellipse(destination_surface, self.color, (self.x, self.y, self.w, self.h), self.thickness)
+		
+class EwPolygon(EwShape):
+	
+	def __init__(self, pointlist, color=(255,255,255), thickness=1):
+		
+		EwShape.__init__(self, None, None, None, None, color, thickness)
+		self.pointlist = pointlist
+		
+	def draw(self, destination_surface):
+		pygame.draw.polygon(destination_surface, self.color, self.pointlist, self.thickness)
+		
+class EwCircle(EwShape):
+	
+	def __init__(self, x, y, radius, color=(255,255,255), thickness=1):
+		
+		EwShape.__init__(self, x, y, radius*2, radius*2, color, thickness)
+		self.radius = radius
+		
+	def draw(self, destination_surface):
+		pygame.draw.circle(destination_surface, self.color, (self.x, self.y), self.radius, self.thickness)
+		
+	def get_radius(self):
+		return self.radius
+		
+class EwEllipse(EwRect):
+	
+	def __init__(self, x, y, w, h, color=(255,255,255), thickness=1):
+		
+		EwRect.__init__(self, x, y, w, h, color, thickness)
+		
+	def draw(self, destination_surface):
+		pygame.draw.ellipse(destination_surface, self.color, (self.x, self.y, self.w, self.h), self.thickness)
+		
+class EwArc(EwShape):
+	
+	def __init__(self, x, y, w, h, start_angle, stop_angle, color=(255,255,255), thickness=1):
+		
+		EwShape.__init__(self, x, y, w, h, color, thickness)
+		self.start_angle = start_angle
+		self.stop_angle = stop_angle
+		
+	def draw(self, destination_surface):
+		pygame.draw.arc(destination_surface, self.color, (self.x, self.y, self.w, self.h), self.start_angle, self.stop_angle, self.thickness)
+		
+	def get_start_angle(self):
+		return self.start_angle
+		
+	def get_stop_angle(self):
+		return self.stop_angle
+
+class EwLine(EwShape):
+	
+	def __init__(self, start_pos, end_pos, color=(255,255,255), thickness=1):
+	
+		EwShape.__init__(self, None, None, None, None, color, thickness)
+		self.start_pos = start_pos
+		self.end_pos = end_pos
+		
+	def draw(self, destination_surface):
+		pygame.draw.line(destination_surface, self.color, self.start_pos, self.end_pos, self.thickness)
+		
+class EwLines:
+	
+	def __init__(self, lines):
+
+		self.lines = lines
+	
+	def draw(self, destination_surface):
+		
+		if len(self.lines) > 0:
+			for line in self.lines:
+				if isinstance(line, EwLine):
+					line.draw(destination_surface)
+				else:
+					raise NotMemberOfError("EwLine")
+					
+	def __call__(self):
+		return self.lines
+		
+	def get_lines(self):
+		return self.lines
 
 # Collision Detection
 # ======================================================== #
@@ -663,3 +808,12 @@ class EwRectButton(EwAbstractButton, EwRect):
 		
 		EwAbstractButton.__init__(self, x+(w/2)-(font_width/2), y+(h/2)-(font_height/2), font_width, font_height, font_filename, text, font_color, bold)
 		EwRect.__init__(self, x, y, w, h, color, thickness)
+		
+# Environment
+# ======================================================== #
+
+class EwEnvironment(EwData):
+	
+	def __init__(self):
+		
+		EwData.__init__(self)

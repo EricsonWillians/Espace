@@ -40,6 +40,7 @@ if __name__ == "__main__":
 	DISTANCE_LIMIT = 2048
 
 	app = er.EwApp("Espace", SCREEN_WIDTH, SCREEN_HEIGHT, 300, True)
+	env = er.EwEnvironment()
 	
 	if not os.path.isfile("hs"):
 		open("hs", "w")
@@ -49,17 +50,17 @@ if __name__ == "__main__":
 	pygame.mixer.music.load(os.path.join(er.MUSIC_PATH, "ewm.ogg"))
 	pygame.mixer.music.play(-1)
 		
-	fire_sound = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "fire.ogg"))
-	fire_sound.set_volume(0.3)
+	env["FIRE_SOUND"] = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "fire.ogg"))
+	env["FIRE_SOUND"].set_volume(0.3)
 	
-	kill = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "kill.ogg"))
-	kill.set_volume(0.5)
+	env["KILL_SOUND"] = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "kill.ogg"))
+	env["KILL_SOUND"].set_volume(0.5)
 	
-	raid_sound = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "raid.ogg"))
-	lost_sound = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "lost.ogg"))
-	game_over_sound = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "game_over.ogg"))
+	env["RAID_SOUND"] = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "raid.ogg"))
+	env["LOST_SOUND"] = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "lost.ogg"))
+	env["GAME_OVER_SOUND"] = pygame.mixer.Sound(os.path.join(er.SOUNDS_PATH, "game_over.ogg"))
 
-	bg = er.EwScrollingImage(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "bg.png", er.EwDirection("SOUTH"))
+	env["BACKGROUND"] = er.EwScrollingImage(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "bg.png", er.EwDirection("SOUTH"))
 	
 	class HealthBar(er.EwRect):
 		
@@ -160,7 +161,7 @@ if __name__ == "__main__":
 				for bullet in player["Ammo"]:
 					if er.EwCol(bullet, en)():
 						if en.health <= 0:
-							kill.play()
+							env["KILL_SOUND"].play()
 							try:
 								self.spawn.pop(self.spawn.index(en))
 							except:
@@ -192,12 +193,12 @@ if __name__ == "__main__":
 				self.raid.draw()
 				self.raid.check_col()
 			else:
-				raid_sound.play()
+				env["RAID_SOUND"].play()
 				self.spawn_number += randrange(1, 4)
 				self.speed_range += 0.05
 				self.raid = Raid(self.spawn_number, self.speed_range)
 				self.counter += 1
-				bg.scroll_speed += 0.5
+				env["BACKGROUND"].scroll_speed += 0.5
 			
 	RM = RaidManager()
 	
@@ -224,7 +225,7 @@ if __name__ == "__main__":
 		
 		for en in RM.raid.spawn:
 			if en.y > SCREEN_HEIGHT+en.h:
-				lost_sound.play()
+				env["LOST_SOUND"].play()
 				global lost
 				lost += 1
 				RM.raid.spawn.pop(RM.raid.spawn.index(en))
@@ -244,14 +245,14 @@ if __name__ == "__main__":
 					hs_file_w.write(str(frags))
 					hs_file_w.close()
 				plot.change_scene("GAME_OVER")
-				game_over_sound.play()
+				env["GAME_OVER_SOUND"].play()
 	
 	def organize_bullets():
 
 		def shoot(t):
 			
 			if app.check_if_time_has_elapsed_in_milliseconds(t):
-				fire_sound.play()
+				env["FIRE_SOUND"].play()
 				if len(player["Ammo"]) < 32:
 					player["Ammo"].append(PlayerBullet(player.x, player.y, 2))
 				else:
@@ -371,7 +372,7 @@ if __name__ == "__main__":
 	def update():
 		
 		pygame.display.flip()
-		bg.draw(app.screen)
+		env["BACKGROUND"].draw(app.screen)
 		
 		if plot() == "MAIN_MENU":
 			
@@ -384,7 +385,7 @@ if __name__ == "__main__":
 				plot.change_scene("HIGHSCORE")
 				
 			if _exit.press(pygame.mouse.get_pos(), 0):
-				app.state = True
+				app()
 
 			[b.draw(app.screen) for b in buttons if b != resume_game]
 			[b.font.draw(app.screen) for b in buttons if b != resume_game]
@@ -471,7 +472,7 @@ if __name__ == "__main__":
 				plot.change_scene("HIGHSCORE")
 			
 			if _exit.press(pygame.mouse.get_pos(), 0):
-				app.state = True
+				app()
 
 			[b.draw(app.screen) for b in buttons if b != start_game]
 			[b.font.draw(app.screen) for b in buttons if b != start_game]
@@ -497,7 +498,7 @@ if __name__ == "__main__":
 				plot.change_scene("HIGHSCORE")
 				
 			if _exit.press(pygame.mouse.get_pos(), 0):
-				app.state = True
+				app()
 			
 			[b.draw(app.screen) for b in buttons if b != resume_game]
 			[b.font.draw(app.screen) for b in buttons if b != resume_game]
@@ -505,6 +506,6 @@ if __name__ == "__main__":
 			
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
-				app.state = True
+				app()
 
 	app.run(update)
