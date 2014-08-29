@@ -62,26 +62,6 @@ if __name__ == "__main__":
 
 	env["BACKGROUND"] = er.EwScrollingImage(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "bg.png", er.EwDirection("SOUTH"))
 	
-	class HealthBar(er.EwRect):
-		
-		def __init__(self, x, y, w, h, value):
-			
-			self.value = value
-			self.green = 255
-			self.red = 0
-			self.number = er.EwFont(x+(w/2)-(w/5)/2, y, w/5, h, None, str(self.value), (255, 255, 255))
-			er.EwRect.__init__(self, x, y, w, h, (self.red, self.green, 0), 0)
-			
-		def subtract_health(self, damage):
-			
-			self.value -= damage
-			if self.green > 0:
-				self.green -= 255/self.value
-			if self.red < 255:
-				self.red += 255/self.value
-			if self.green >= 0 and self.red <= 255:
-				self.color = (self.red, self.green, 0)
-	
 	PLAYER_SIZE = 64
 	PLAYER_COLOR = (255, 255, 255)
 	PLAYER_SPEED = 1
@@ -90,7 +70,7 @@ if __name__ == "__main__":
 	player = er.EwImage(((SCREEN_WIDTH/2)-(PLAYER_SIZE/2)), 768-PLAYER_SIZE*2, PLAYER_SIZE+32, PLAYER_SIZE, "Player.png")
 	player["Health"] = 20
 	player["Ammo"] = []
-	player["Health Bar"] = HealthBar((SCREEN_WIDTH/2)-player.w/2, SCREEN_HEIGHT-player.h/2, player.w, player.h/3, 20)
+	player["Health Bar"] = er.HealthBar((SCREEN_WIDTH/2)-player.w/2, SCREEN_HEIGHT-player.h/2, player.w, player.h/3, 20)
 	player["Shoot Mode"] = "DEFAULT"
 
 	tlost_green = 255
@@ -134,7 +114,7 @@ if __name__ == "__main__":
 			x = randrange(8, SCREEN_WIDTH-w)
 			y = -randrange(h, DISTANCE_LIMIT)
 			er.EwImage.__init__(self, x, y, w, h, Enemy.FILENAMES[randrange(0, len(Enemy.FILENAMES)-1)])
-			self.health_bar = HealthBar(x, y-h/2, w, h/3, self.health)
+			self.health_bar = er.HealthBar(x, y-h/2, w, h/3, self.health)
 			
 		def translate(self):
 			self.y += self.speed
@@ -151,6 +131,9 @@ if __name__ == "__main__":
 			
 		def draw(self):
 			[x.draw(app.screen) for x in self.spawn]
+			for en in self.spawn:
+				if en.health <= 0:
+					en.fade_out(0.2)
 			[x.health_bar.draw(app.screen) for x in self.spawn]
 			[x.health_bar.number.draw(app.screen) for x in self.spawn]
 			[x.health_bar.number.update(str(x.health)) for x in self.spawn]
@@ -163,13 +146,15 @@ if __name__ == "__main__":
 						if en.health <= 0:
 							env["KILL_SOUND"].play()
 							try:
-								self.spawn.pop(self.spawn.index(en))
+								if app.check_if_time_has_elapsed_in_milliseconds(120):
+									self.spawn.pop(self.spawn.index(en))
 							except:
 								print "Enemy error (The game tried to delete an enemy from the enemy list that does not exist)."
 							global frags
 							frags += 1
-						en.health -= 1
-						en.health_bar.subtract_health(1)
+						if en.health > 0:
+							en.health -= 1
+							en.health_bar.subtract_health(1)
 						player["Ammo"].pop(player["Ammo"].index(bullet))
 				for bullet in en["Ammo"]:
 					if er.EwCol(bullet, player)():
@@ -370,12 +355,11 @@ if __name__ == "__main__":
 	previous_screen = ""
 
 	def update():
-		
-		pygame.display.flip()
+
 		env["BACKGROUND"].draw(app.screen)
-		
+
 		if plot() == "MAIN_MENU":
-			
+
 			if start_game.press(pygame.mouse.get_pos(), 0, pygame.K_RETURN):
 				plot.change_scene("GAME")
 				
@@ -395,7 +379,7 @@ if __name__ == "__main__":
 			tcredits.draw(app.screen)
 				
 		if plot() == "HIGHSCORE":
-			
+				
 			try:
 				if os.path.isfile("hs"):
 					hs = ""
@@ -459,7 +443,7 @@ if __name__ == "__main__":
 					plot.change_scene("PAUSE")
 			
 		if plot() == "PAUSE":
-			
+
 			tpaused.draw(app.screen)
 			if app.check_if_time_has_elapsed_in_milliseconds(130):
 				if pygame.key.get_pressed()[pygame.K_p] or pygame.key.get_pressed()[pygame.K_ESCAPE]:
@@ -479,7 +463,7 @@ if __name__ == "__main__":
 			[glow(b) for b in buttons]
 			
 		if plot() == "GAME_OVER":
-			
+
 			tfrags("Frags: " + str(frags))
 			tlost("Lost: " + str(lost))
 			tlost.color = (tlost_red, tlost_green, 0)

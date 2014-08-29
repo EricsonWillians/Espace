@@ -148,6 +148,7 @@ class EwRunnable:
 			dt = self.clock.tick(self.FPS)
 			self.time_elapsed += dt
 			apply(f, args)
+			pygame.display.flip()
 			
 	def watch_for_exit(self):
 		
@@ -181,7 +182,7 @@ class EwApp(EwRunnable, EwData):
 			print "Configuration dictionary saved."
 		
 		if self["FULLSCREEN"] == True:
-			self.screen = pygame.display.set_mode((self["SCREEN_WIDTH"], self["SCREEN_HEIGHT"]), pygame.FULLSCREEN)
+			self.screen = pygame.display.set_mode((self["SCREEN_WIDTH"], self["SCREEN_HEIGHT"]), pygame.DOUBLEBUF | pygame.FULLSCREEN)
 		else:
 			self.screen = pygame.display.set_mode((self["SCREEN_WIDTH"], self["SCREEN_HEIGHT"]))
 		pygame.display.set_caption(self["TITLE"])
@@ -394,7 +395,16 @@ class EwPositioningSystem(EwResizable):
 # Object Manipulation
 # ======================================================== #
 
-class EwObject(EwData, EwMovable, EwResizable):
+class EwDrawable:
+	
+	def __init__(self):
+		
+		pass
+		
+	def draw(self, destination_surface):
+		pass
+
+class EwObject(EwDrawable, EwData, EwMovable, EwResizable):
 	
 	def __init__(self, x, y, w, h):
 		
@@ -407,23 +417,48 @@ class EwObject(EwData, EwMovable, EwResizable):
 		
 class EwImage(EwObject):
 	
-	def __init__(self, x, y, w, h, filename):
+	def __init__(self, x, y, w, h, filename, alpha=255):
 		
 		EwObject.__init__(self, x, y, w, h)
 		
 		self.filename = filename
+		self.alpha = alpha
+		
 		if ".png" not in self.filename:
 			self.image = pygame.image.load(os.path.join(GRAPHICS_PATH, filename)).convert()
 		else:
-			self.image = pygame.Surface.convert_alpha(pygame.image.load(os.path.join(GRAPHICS_PATH, filename)))
-			
+			self.image = pygame.image.load(os.path.join(GRAPHICS_PATH, filename)).convert_alpha()
+		
+		self.image.fill((255, 255, 255, self.alpha), None, pygame.BLEND_RGBA_MULT)
 		self.transform()
 			
 	def transform(self):
 		self.image = pygame.transform.scale(self.image, (self.w, self.h))
 		
-	def transform_custom(self, w, h):
+	def transform_freely(self, w, h):
 		self.image = pygame.transform.scale(self.image, (w, h))
+		
+	def fade_in(self, speed, limit=255):
+		if (self.alpha < limit) and (self.alpha < 255):
+			self.alpha += speed
+			self.image.fill((255, 255, 255, self.alpha), None, pygame.BLEND_RGBA_MULT)
+		
+	def fade_out(self, speed, limit=0):
+		if (self.alpha > limit) and (self.alpha > 0):
+			self.alpha -= speed
+			self.image.fill((255, 255, 255, self.alpha), None, pygame.BLEND_RGBA_MULT)
+			
+	def is_faded_in(self, value=255):
+		if self.alpha >= value:
+			return True
+		else:
+			return False 
+			
+	def is_faded_out(self, value=0):
+		if self.alpha <= value:
+			return True
+		else:
+			return False 
 			
 	def draw(self, destination_surface):
 		destination_surface.blit(self.image, (self.x, self.y))
@@ -817,3 +852,26 @@ class EwEnvironment(EwData):
 	def __init__(self):
 		
 		EwData.__init__(self)
+
+# Game Specific
+# ======================================================== #
+
+class HealthBar(EwRect):
+		
+	def __init__(self, x, y, w, h, value):
+			
+		self.value = value
+		self.green = 255
+		self.red = 0
+		self.number = EwFont(x+(w/2)-(w/5)/2, y, w/5, h, None, str(self.value), (255, 255, 255))
+		EwRect.__init__(self, x, y, w, h, (self.red, self.green, 0), 0)
+			
+	def subtract_health(self, damage):
+			
+		self.value -= damage
+		if self.green > 0:
+			self.green -= 255/self.value
+		if self.red < 255:
+			self.red += 255/self.value
+		if self.green >= 0 and self.red <= 255:
+			self.color = (self.red, self.green, 0)
