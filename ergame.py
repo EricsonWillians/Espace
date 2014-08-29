@@ -208,6 +208,12 @@ class EwApp(EwRunnable, EwData):
 			return True
 		else:
 			return False
+			
+	def get_center_x(self, width):
+		return (self["SCREEN_WIDTH"]/2)-(width/2)
+		
+	def get_center_y(self, height):
+		return (self["SCREEN_HEIGHT"]/2)-(height/2)
 
 # POSITIONS AND DIMENSIONS
 # ======================================================== #
@@ -853,7 +859,7 @@ class EwEnvironment(EwData):
 		
 		EwData.__init__(self)
 
-# Game Specific
+# Game-Specific
 # ======================================================== #
 
 class HealthBar(EwRect):
