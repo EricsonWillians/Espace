@@ -13,6 +13,7 @@ Ergame is my personal game library, and it's available [here on github](https://
 
 ### Latest Updates:
 
+* (29/08/2014): Added fade-out effect for enemy deaths.
 * (21/08/2014): Advanced bullet control.
 * (21/08/2014): Player health.
 * (21/08/2014): Improved health system (Now each Health Bar has a visual numberic representation of its value).
