@@ -133,7 +133,10 @@ if __name__ == "__main__":
 			[x.draw(app.screen) for x in self.spawn]
 			for en in self.spawn:
 				if en.health <= 0:
-					en.fade_out(0.2)
+					try:
+						en.fade_out(2)
+					except TypeError:
+						print "Got invalid color argument."
 			[x.health_bar.draw(app.screen) for x in self.spawn]
 			[x.health_bar.number.draw(app.screen) for x in self.spawn]
 			[x.health_bar.number.update(str(x.health)) for x in self.spawn]
@@ -146,7 +149,7 @@ if __name__ == "__main__":
 						if en.health <= 0:
 							env["KILL_SOUND"].play()
 							try:
-								if app.check_if_time_has_elapsed_in_milliseconds(150):
+								if app.check_if_time_has_elapsed_in_milliseconds(100):
 									self.spawn.pop(self.spawn.index(en))
 							except:
 								print "Enemy error (The game tried to delete an enemy from the enemy list that does not exist)."
