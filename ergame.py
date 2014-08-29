@@ -264,23 +264,28 @@ class EwDirection:
 	
 	def __init__(self, value=0):
 		
-		if value.upper() in ["UP", "DOWN", "LEFT", "RIGHT"]:
-			if value.upper() == "UP":
-				value = "NORTH"
-			elif value.upper() == "DOWN":
-				value = "SOUTH"
-			elif value.upper() == "LEFT":
-				value = "WEST"
-			elif value.upper() == "RIGHT":
-				value = "EAST"
+		self.value = value
 		
-		if isinstance(value, basestring) and value.upper() in EwDirection.DIRECTIONS:
-			self.value = value.upper()
+		if isinstance(self.value, basestring):
+			if self.value.upper() in ["UP", "DOWN", "LEFT", "RIGHT"]:
+				if self.value.upper() == "UP":
+					self.value = "NORTH"
+				elif self.value.upper() == "DOWN":
+					self.value = "SOUTH"
+				elif self.value.upper() == "LEFT":
+					self.value = "WEST"
+				elif self.value.upper() == "RIGHT":
+					self.value = "EAST"
 		else:
-			if value >= 0 and value <= 3:
-				self.value = value
-			else:
-				raise InvalidDirectionError()
+			if self.value in range(0, 3):
+				if self.value == 0:
+					self.value = "NORTH"
+				elif self.value == 1:
+					self.value = "SOUTH"
+				elif self.value == 2:
+					self.value = "WEST"
+				elif self.value == 3:
+					self.value = "EAST"
 				
 	def __call__(self):
 		return self.value
@@ -298,7 +303,7 @@ class EwMovable(EwPos):
 		if isinstance(direction, EwDirection):
 			self.direction = direction
 		else:
-			raise NotMemberOfError("EwDirection")
+			direction = EwDirection(direction)
 		if condition:
 			if direction() == 0 or direction() == "NORTH":
 				self.y -= step
