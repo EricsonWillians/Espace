@@ -146,7 +146,7 @@ if __name__ == "__main__":
 						if en.health <= 0:
 							env["KILL_SOUND"].play()
 							try:
-								if app.check_if_time_has_elapsed_in_milliseconds(120):
+								if app.check_if_time_has_elapsed_in_milliseconds(150):
 									self.spawn.pop(self.spawn.index(en))
 							except:
 								print "Enemy error (The game tried to delete an enemy from the enemy list that does not exist)."
