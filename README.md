@@ -1,27 +1,27 @@
-Espace
-======
+# Espace: Open-Source Arcade Space Shooter
 
-Espace is an open-source arcade shooting space game written in Python 2.7 with Ergame and Pygame.
-Ergame is my personal game library, and it's available [here on github](https://github.com/EricsonWillians/Ergame).
+Espace is an open-source arcade space shooting game, developed using Python 2.7 with Ergame and Pygame. Ergame is a personal game library created by the author, available on [GitHub](https://github.com/EricsonWillians/Ergame).
 
-### Controls:
+## Controls
 
-* AWSD or ARROWS for movement.
-* LSHIFT for boost.
-* SPACE for shooting.
-* P for pause.
+- Movement: AWSD or Arrow keys
+- Boost: Left Shift
+- Shooting: Spacebar
+- Pause: P
 
-### Latest Updates:
+## Recent Updates
 
-* (29/08/2014): Added fade-out effect for enemy deaths.
-* (21/08/2014): Advanced bullet control.
-* (21/08/2014): Player health.
-* (21/08/2014): Improved health system (Now each Health Bar has a visual numberic representation of its value).
-* (21/08/2014): Enemy bullets (Now they shoot as well).
+- (29/08/2014): Added fade-out effect for enemy deaths
+- (21/08/2014): Advanced bullet control
+- (21/08/2014): Player health
+- (21/08/2014): Improved health system (visual numeric representation)
+- (21/08/2014): Enemy bullets (enemies now shoot)
 
-### Gameplay Hints:
+## Gameplay Tips
 
-* You can move faster by combining the movements of AWSD and the ARROWS (And LSHIFT).
-* If you combine movements at the same time that you shoot, you'll be able to control your bullets (And that allows you to cluster bullets in order to wipe out more enemies).
-* You can shoot backwards or do side-shooting if you combine the movements and shoot, but release the SPACE bar first.
-* Be careful while clusting bullets: Although you have more chances to kill more enemies, you also have more chances of being hit by some random enemy-bullet.
+- Move faster by combining AWSD and Arrow keys along with Left Shift.
+- Control bullet direction by moving and shooting simultaneously.
+- Perform backward or side-shooting by releasing the Spacebar while moving.
+- Be cautious when clustering bullets to avoid random enemy fire.
+
+Unleash your space combat skills and experience the thrill of Espace's dynamic gameplay.
